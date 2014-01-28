@@ -21,3 +21,6 @@ default['kibana']['webserver_listen'] = node.ipaddress
 default['kibana']['webserver_port'] = 80
 default['kibana']['webserver_scheme'] = "http://"
 
+default['kibana']['basic_auth'] = false
+default['kibana']['enable_ssl'] = false
+default['kibana']['users_databag'] = 'users'

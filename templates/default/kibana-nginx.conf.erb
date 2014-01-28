@@ -1,8 +1,24 @@
 server {
-  listen                <%= @listen_address %>:<%= @listen_port %>;
+  <% if node['kibana']['enable_ssl'] %>
+  listen [::]:443 ssl;
+
+  ssl                  on;
+  ssl_certificate      /etc/nginx/conf.d/ssl/<%= node['kibana']['nginx']['ssl_cert_name'] %>.bundle.pem;
+  ssl_certificate_key  /etc/nginx/conf.d/ssl/<%= node['kibana']['nginx']['ssl_cert_name'] %>.key;
+
+  ssl_session_timeout  5m;
+  <% else %>
+  listen <%= @listen_address %>:<%= @listen_port %>;
+  <% end %>
 
   server_name           <%= @server_name %> <%= @server_aliases.join(" ") %>;
   access_log            /var/log/nginx/<%= @server_name %>.access.log;
+
+  <% if node['kibana']['basic_auth'] %>
+  # Authorize access
+  auth_basic           "Restricted";
+  auth_basic_user_file <%= node['kibana']['nginx']['passwords_file'] %>;
+  <% end %>
 
   location / {
     root  <%= @kibana_dir %>;
@@ -29,6 +45,7 @@ server {
     proxy_pass <%= @es_scheme %><%= @es_server %>:<%= @es_port %>;
     proxy_read_timeout 90;
   }
+  # Password protected end points
   location ~ ^/kibana-int/dashboard/.*$ {
     proxy_pass <%= @es_scheme %><%= @es_server %>:<%= @es_port %>;
     proxy_read_timeout 90;
@@ -38,3 +55,4 @@ server {
     proxy_read_timeout 90;
   }
 }
+

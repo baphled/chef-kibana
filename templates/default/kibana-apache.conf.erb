@@ -5,6 +5,21 @@
 
   DocumentRoot <%= @params[:kibana_dir] %>
   <Directory <%= @params[:kibana_dir] %>>
+
+  <% if node['kibana']['enable_ssl'] %>
+    SSLEngine on
+    SSLCertificateFile /etc/apache/conf.d/ssl/<%= node['kibana']['apache']['ssl_cert_name'] %>.bundle.pem;
+    SSLCertificateKeyFile /etc/apache/conf.d/ssl/<%= node['kibana']['apache']['ssl_cert_name'] %>.key;
+  <% end %>
+
+  <% if node['kibana']['basic_auth'] %>
+    AuthType Basic
+    AuthName "Authentication Required"
+    AuthUserFile <%= node['kibana']['nginx']['passwords_file'] %>
+    Require valid-user
+
+    Order allow,deny
+  <% end %>
     Allow from all
     Options -Multiviews
   </Directory>

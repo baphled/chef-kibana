@@ -38,3 +38,23 @@ web_app "#{node['kibana']['webserver_hostname']}-#{node['kibana']['webserver_por
   listen_port    node['kibana']['webserver_port']
   es_scheme      node['kibana']['es_scheme']
 end
+
+if node['kibana']['basic_auth']
+  # find kibana web interface users from the defined data bag
+  user_databag = node['kibana']['users_databag'].to_sym
+  begin
+    users = search(user_databag, "NOT action:remove")
+  rescue Net::HTTPServerException
+    Chef::Log.fatal("Could not find appropriate items in the \"#{node['logstash']['users_databag']}\" databag.  Check to make sure the databag exists")
+    raise 'Could not find appropriate items in the "users" databag.  Check to make sure there is a users databag'
+  end
+
+  directory "/etc/httpd"
+  template "/etc/httpd/htpasswd" do
+    source 'htpasswd.users.erb'
+    mode 00640
+    owner node['kibana']['user']
+    group node['kibana']['webserver']
+    variables(:users => users)
+  end
+end
