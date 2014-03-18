@@ -39,3 +39,23 @@ template "/etc/nginx/sites-available/kibana" do
 end
 
 nginx_site "kibana"
+
+if node['kibana']['basic_auth']
+  # find kibana web interface users from the defined data bag
+  user_databag = node['kibana']['users_databag'].to_sym
+  begin
+    users = search(user_databag, "NOT action:remove")
+  rescue Net::HTTPServerException
+    Chef::Log.fatal("Could not find appropriate items in the \"#{node['logstash']['users_databag']}\" databag.  Check to make sure the databag exists")
+    raise 'Could not find appropriate items in the "users" databag.  Check to make sure there is a users databag'
+  end
+
+  directory "/etc/nginx"
+  template "/etc/nginx/htpasswd" do
+    source 'htpasswd.users.erb'
+    mode 00640
+    owner node['kibana']['user']
+    group node['kibana']['webserver']
+    variables(:users => users)
+  end
+end
